@@ -1,0 +1,9 @@
+2026-01-11 21:29:20,945 - INFO - DataCleaner: Output shape (3, 6)
+2026-01-11 21:29:20,950 - INFO - DataCleaner: Output shape (3, 6)
+2026-01-11 21:29:20,961 - INFO - Loading raw data from C:\Users\NOBEL\GitHub\AgroSense\ml\../data/raw/crop_data.csv...
+2026-01-11 21:29:20,972 - INFO - --- Processing for CROP Recommendation ---
+2026-01-11 21:29:20,982 - INFO - DataCleaner: Output shape (8000, 7)
+2026-01-11 21:29:21,115 - INFO - Pipeline successfully saved to C:\Users\NOBEL\GitHub\AgroSense\ml\../models\pipeline_crop.joblib
+2026-01-11 21:29:21,115 - INFO - --- Processing for FERTILIZER Recommendation ---
+2026-01-11 21:29:21,130 - INFO - DataCleaner: Output shape (8000, 8)
+2026-01-11 21:29:21,254 - INFO - Pipeline successfully saved to C:\Users\NOBEL\GitHub\AgroSense\ml\../models\pipeline_fertilizer.joblib
