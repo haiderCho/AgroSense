@@ -3,7 +3,7 @@ from typing import Dict, Any, List, Optional
 
 @dataclass
 class MLflowConfig:
-    experiment_name: str = "crop_recommendation"
+    experiment_name: str = "AgroSense_Crop_Recommendation"
     tracking_uri: Optional[str] = None  # Use default local if None
 
 @dataclass

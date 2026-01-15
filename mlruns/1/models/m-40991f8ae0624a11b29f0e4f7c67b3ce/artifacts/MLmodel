@@ -1,0 +1,22 @@
+artifact_path: file:///C:/Users/NOBEL/GitHub/AgroSense/mlruns/1/models/m-40991f8ae0624a11b29f0e4f7c67b3ce/artifacts
+flavors:
+  python_function:
+    env:
+      conda: conda.yaml
+      virtualenv: python_env.yaml
+    loader_module: mlflow.sklearn
+    model_path: model.pkl
+    predict_fn: predict
+    python_version: 3.10.6
+  sklearn:
+    code: null
+    pickled_model: model.pkl
+    serialization_format: cloudpickle
+    sklearn_version: 1.7.2
+mlflow_version: 3.8.1
+model_id: m-40991f8ae0624a11b29f0e4f7c67b3ce
+model_size_bytes: 6837435
+model_uuid: m-40991f8ae0624a11b29f0e4f7c67b3ce
+prompts: null
+run_id: 36eee79b5e354f458c54a6fa335677e6
+utc_time_created: '2026-01-15 08:13:55.355301'
