@@ -20,8 +20,8 @@ else:
 print(f"Working Directory: {os.getcwd()}")
 
 # %%
-from src.training.trainer import Trainer
-from src.models.config import MODELS
+from backend.training.trainer import Trainer
+from backend.models.config import MODELS
 
 # %% [markdown]
 # ## Initialize Trainer
@@ -42,9 +42,10 @@ models_to_train = ["rf", "xgb", "svm", "catboost", "lr", "ensemble", "stacking"]
 # %% [markdown]
 # ## Run Experiments
 # Train all selected models and collect metric results.
+# Set `tune=True` to enable hyperparameter optimization via RandomizedSearchCV.
 
 # %%
-results = trainer.run_experiment(models_to_train)
+results = trainer.run_experiment(models_to_train, tune=True)
 
 # %% [markdown]
 # ## Summary of Results
