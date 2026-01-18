@@ -1,11 +1,28 @@
 "use client";
-
 import { motion } from "framer-motion";
 import { PredictionResponse } from "../types";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { ConfidenceChart } from "./ConfidenceChart";
-import { FeatureImportanceChart } from "./FeatureImportanceChart";
-import { CheckCircle2, AlertTriangle, Award, Medal, Trophy } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { CheckCircle2, AlertTriangle, Award, Medal, Trophy, Printer } from "lucide-react";
+import dynamic from "next/dynamic";
+import { Button } from "@/components/ui/button";
+import { useRef } from "react";
+import { useReactToPrint } from "react-to-print";
+import { ReportHeader } from "./ReportHeader";
+
+// Lazy load heavy chart components
+const ConfidenceChart = dynamic(() => import("./ConfidenceChart").then(mod => mod.ConfidenceChart), {
+  loading: () => <div className="h-[200px] w-full animate-pulse bg-muted rounded-lg" />
+});
+
+const FeatureImportanceChart = dynamic(() => import("./FeatureImportanceChart").then(mod => mod.FeatureImportanceChart), {
+    loading: () => <div className="h-[220px] w-full animate-pulse bg-muted rounded-lg" />
+});
+
+const SimulationLab = dynamic(() => import("./SimulationLab").then(mod => mod.SimulationLab), {
+    loading: () => <div className="h-[400px] w-full animate-pulse bg-muted rounded-lg" />
+});
+
+const InsightGenerator = dynamic(() => import("./InsightGenerator").then(mod => mod.InsightGenerator));
 
 interface PredictionResultProps {
   result: PredictionResponse;
@@ -13,6 +30,14 @@ interface PredictionResultProps {
 }
 
 export function PredictionResult({ result, onReset }: PredictionResultProps) {
+  const componentRef = useRef<HTMLDivElement>(null);
+
+  const handlePrint = useReactToPrint({
+    contentRef: componentRef,
+    documentTitle: `AgroSense-Report-${new Date().toISOString().split('T')[0]}`,
+    onAfterPrint: () => console.log("Report exported successfully"),
+  });
+
   // Handle empty predictions
   if (!result.predictions || result.predictions.length === 0) {
     return (
@@ -28,6 +53,8 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
       </Card>
     );
   }
+
+
 
   // Sort predictions by confidence
   const sortedPredictions = [...result.predictions].sort((a, b) => b.confidence - a.confidence);
@@ -54,7 +81,18 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
   ];
 
   return (
-    <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700">
+    <div ref={componentRef} className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-700 print:space-y-6 print:container print:py-8">
+      {/* Print Header - Visible only in Print */}
+      <ReportHeader />
+
+      {/* Header Actions */}
+      <div className="flex justify-between items-center print:hidden">
+         <h2 className="text-2xl font-bold">Analysis Results</h2>
+         <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
+            <Printer className="w-4 h-4" /> Export Report
+         </Button>
+      </div>
+
       {/* Consensus Banner */}
       {isStrongConsensus && (
         <motion.div
@@ -71,8 +109,11 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
 
       {/* Top 3 Model Predictions */}
       <div>
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4">
-          Top 3 Model Predictions
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4 flex justify-between items-center">
+          <span>Top 3 Model Consensus</span>
+          <span className="text-xs normal-case bg-secondary px-2 py-1 rounded text-foreground/70">
+            Ensemble Agreement: {isStrongConsensus ? 'High' : 'Moderate'}
+          </span>
         </h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
           {top3Predictions.map((pred, index) => (
@@ -81,8 +122,9 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
+              className="print:break-inside-avoid"
             >
-              <Card className={`h-full transition-all hover:scale-[1.02] ${rankColors[index]}`}>
+              <Card className={`h-full transition-all hover:scale-[1.02] ${rankColors[index]} border-opacity-50`}>
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -115,22 +157,40 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
         </div>
       </div>
 
-      {/* Analytics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <ConfidenceChart predictions={result.predictions} />
-        {topPrediction.explanation && Object.keys(topPrediction.explanation).length > 0 ? (
-          <FeatureImportanceChart explanation={topPrediction.explanation} />
-        ) : (
-          <Card className="h-full flex items-center justify-center p-6 text-muted-foreground border-dashed">
-            <div className="text-center">
-              <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-              <p>xAI Data Unavailable</p>
-            </div>
-          </Card>
-        )}
+      {/* AI Insights Block */}
+      <div className="print:break-inside-avoid">
+         <InsightGenerator 
+            crop={topPrediction.crop} 
+            confidence={topPrediction.confidence} 
+            explanation={topPrediction.explanation} 
+         />
       </div>
 
-      <div className="pt-4 text-center">
+      {/* Analytics Grid */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="print:break-inside-avoid">
+            <ConfidenceChart predictions={result.predictions} />
+        </div>
+        <div className="print:break-inside-avoid">
+            {topPrediction.explanation && Object.keys(topPrediction.explanation).length > 0 ? (
+            <FeatureImportanceChart explanation={topPrediction.explanation} />
+            ) : (
+            <Card className="h-full flex items-center justify-center p-6 text-muted-foreground border-dashed bg-muted/20">
+                <div className="text-center">
+                <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
+                <p>xAI Data Unavailable</p>
+                </div>
+            </Card>
+            )}
+        </div>
+      </div>
+
+      {/* What-If Simulator (Interactive) */}
+      <div className="print:hidden pt-4">
+         <SimulationLab />
+      </div>
+
+      <div className="pt-4 text-center print:hidden">
         <button 
           onClick={onReset}
           className="text-sm text-muted-foreground hover:text-primary transition-colors underline decoration-dotted underline-offset-4"

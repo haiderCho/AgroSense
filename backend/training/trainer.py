@@ -13,12 +13,18 @@ from backend.models.config import PATHS, MLflowConfig
 class Trainer:
     def __init__(self, experiment_name: str = None):
         self.experiment_name = experiment_name or MLflowConfig.experiment_name
+        
+        # Set Tracking URI first
+        mlflow.set_tracking_uri(MLflowConfig.tracking_uri)
+        print(f"MLflow Tracking URI: {mlflow.get_tracking_uri()}")
+        
         mlflow.set_experiment(self.experiment_name)
         self.load_data()
 
     def load_data(self):
         """Loads processed data from defined paths."""
         data_dir = PATHS["processed_data"]
+        # Ensure data paths are correct relative to project root
         self.X_train = pd.read_csv(os.path.join(data_dir, "X_train.csv"))
         self.y_train = pd.read_csv(os.path.join(data_dir, "y_train.csv")).values.ravel()
         self.X_val = pd.read_csv(os.path.join(data_dir, "X_val.csv"))
@@ -27,7 +33,7 @@ class Trainer:
         self.y_test = pd.read_csv(os.path.join(data_dir, "y_test.csv")).values.ravel()
     
     def train_model(self, model_key: str):
-        """Trains a specific model and logs it to MLflow."""
+        """Trains a specific model, logs to MLflow, and saves local portable artifact."""
         print(f"\nStarting training for: {model_key}")
         
         with mlflow.start_run(run_name=f"train_{model_key}"):
@@ -69,8 +75,11 @@ class Trainer:
             os.remove(cm_path) # Clean up local file
             plt.close()
 
-            # Save Model
+            # Save Model (MLflow)
             mlflow.sklearn.log_model(model, "model")
+
+            # Save Model (Local Joblib for Portability)
+            self._save_local_model(model, model_key)
             
             return model, metrics
 
@@ -92,7 +101,6 @@ class Trainer:
             param_grid = PARAM_GRIDS[model_key]
             
             # Setup Random Search
-            # n_jobs=-1 uses all processors
             search = RandomizedSearchCV(
                 estimator=base_model,
                 param_distributions=param_grid,
@@ -143,10 +151,31 @@ class Trainer:
             mlflow.log_artifact(cm_path)
             os.remove(cm_path)
 
-            # Save Best Model
+            # Save Best Model (MLflow)
             mlflow.sklearn.log_model(best_model, "model")
+
+            # Save Model (Local Joblib for Portability)
+            self._save_local_model(best_model, model_key)
             
             return best_model, metrics
+
+    def _save_local_model(self, model, model_key):
+        """Helper to save model to local storage."""
+        from backend.models.config import MODEL_NAME_MAP
+        
+        try:
+            readable_name = MODEL_NAME_MAP.get(model_key, model_key)
+            # Use PATHS["models"] if available, else default to 'models'
+            models_root = PATHS.get("models", "models")
+            
+            model_dir = os.path.join(models_root, readable_name)
+            os.makedirs(model_dir, exist_ok=True)
+            
+            joblib_path = os.path.join(model_dir, "model.joblib")
+            joblib.dump(model, joblib_path)
+            print(f"  ✓ Model saved locally to: {joblib_path}")
+        except Exception as e:
+            print(f"  ✗ Failed to save local model: {e}")
 
     def run_experiment(self, models_to_run: list = None, tune: bool = False):
         """Runs training for a list of model keys, optionally with tuning."""

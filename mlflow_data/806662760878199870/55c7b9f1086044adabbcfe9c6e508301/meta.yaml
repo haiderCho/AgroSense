@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/NOBEL/GitHub/AgroSense/mlflow_data/806662760878199870/55c7b9f1086044adabbcfe9c6e508301/artifacts
+end_time: 1768712727801
+entry_point_name: ''
+experiment_id: '806662760878199870'
+lifecycle_stage: active
+run_id: 55c7b9f1086044adabbcfe9c6e508301
+run_name: tune_lr
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1768712721116
+status: 3
+tags: []
+user_id: NOBEL

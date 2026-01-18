@@ -1,6 +1,6 @@
 "use client";
 
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { PredictionFormSchema, type PredictionFormData, type PredictionResponse } from "../types";
 import { Input } from "@/components/ui/input";
@@ -9,17 +9,17 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { motion } from "framer-motion";
 import { Loader2, Sprout } from "lucide-react";
-import { useState } from "react";
+import { usePredictCrop } from "../api/usePredictCrop";
 
 interface PredictionFormProps {
   onAnalysisComplete: (result: PredictionResponse) => void;
 }
 
 export function PredictionForm({ onAnalysisComplete }: PredictionFormProps) {
-  const [isLoading, setIsLoading] = useState(false);
-  
+  const { mutate: predict, isPending } = usePredictCrop();
+
   const form = useForm<PredictionFormData>({
-    resolver: zodResolver(PredictionFormSchema),
+    resolver: zodResolver(PredictionFormSchema) as Resolver<PredictionFormData>,
     defaultValues: {
       N: 90,
       P: 42,
@@ -31,32 +31,15 @@ export function PredictionForm({ onAnalysisComplete }: PredictionFormProps) {
     },
   });
 
-  async function onSubmit(data: PredictionFormData) {
-    setIsLoading(true);
-    
-    try {
-        // Real API Call
-        const response = await fetch("http://localhost:8000/predict", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-            },
-            body: JSON.stringify(data),
-        });
-
-        if (!response.ok) {
-            throw new Error(`API Connection Failed: ${response.statusText}`);
-        }
-
-        const realResponse: PredictionResponse = await response.json();
-        onAnalysisComplete(realResponse);
-    } catch (error) {
-        console.error("Prediction failed:", error);
-        // Error handling UI could be added here (toast)
-        alert("Failed to connect to AgroSense API. Ensure backend is running on port 8000.");
-    } finally {
-        setIsLoading(false);
-    }
+  function onSubmit(data: PredictionFormData) {
+    predict(data, {
+      onSuccess: (result) => {
+         onAnalysisComplete(result);
+      },
+      onError: () => {
+         alert("Failed to connect to AgroSense API. Ensure backend is running on port 8000.");
+      }
+    });
   }
 
   const container = {
@@ -205,9 +188,9 @@ export function PredictionForm({ onAnalysisComplete }: PredictionFormProps) {
             <Button 
                 type="submit" 
                 className="w-full h-12 text-lg font-bold tracking-wide"
-                disabled={isLoading}
+                disabled={isPending}
             >
-              {isLoading ? (
+              {isPending ? (
                 <>
                   <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                   ANALYZING DATA...

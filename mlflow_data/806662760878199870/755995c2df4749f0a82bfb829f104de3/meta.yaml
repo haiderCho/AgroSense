@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/NOBEL/GitHub/AgroSense/mlflow_data/806662760878199870/755995c2df4749f0a82bfb829f104de3/artifacts
+end_time: 1768712721110
+entry_point_name: ''
+experiment_id: '806662760878199870'
+lifecycle_stage: active
+run_id: 755995c2df4749f0a82bfb829f104de3
+run_name: tune_catboost
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1768712092341
+status: 3
+tags: []
+user_id: NOBEL

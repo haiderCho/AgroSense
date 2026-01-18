@@ -38,8 +38,39 @@ async def startup_event():
 def health_check():
     return {"status": "online", "models_loaded": list(predictor.models.keys()) if predictor else []}
 
+@app.get("/status")
+def get_status():
+    """Returns model loading status for frontend indicator."""
+    if not predictor:
+        return {
+            "status": "loading",
+            "models_loaded": 0,
+            "models_total": 7,
+            "message": "Initializing predictor..."
+        }
+    
+    loaded_models = list(predictor.models.keys())
+    total_expected = 7  # Number of expected models
+    
+    if len(loaded_models) >= total_expected:
+        return {
+            "status": "ready",
+            "models_loaded": len(loaded_models),
+            "models_total": total_expected,
+            "message": "All models loaded"
+        }
+    else:
+        return {
+            "status": "partial",
+            "models_loaded": len(loaded_models),
+            "models_total": total_expected,
+            "message": f"Loaded {len(loaded_models)}/{total_expected} models"
+        }
+
+from fastapi.concurrency import run_in_threadpool
+
 @app.post("/predict", response_model=PredictionResponse)
-def predict(request: PredictionRequest):
+async def predict(request: PredictionRequest):
     if not predictor:
         raise HTTPException(status_code=503, detail="Predictor is starting up or failed to initialize")
     
@@ -47,8 +78,8 @@ def predict(request: PredictionRequest):
         # Convert Request model to Dict
         input_data = request.dict()
         
-        # Run Inference
-        result = predictor.predict(input_data)
+        # Run Inference in threadpool to avoid blocking event loop
+        result = await run_in_threadpool(predictor.predict, input_data)
         
         return result
     except Exception as e:

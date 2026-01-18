@@ -4,7 +4,7 @@ from typing import Dict, Any, List, Optional
 @dataclass
 class MLflowConfig:
     experiment_name: str = "AgroSense_Crop_Recommendation"
-    tracking_uri: Optional[str] = None  # Use default local if None
+    tracking_uri: str = "file:./mlflow_data"  # Local file-based tracking
 
 @dataclass
 class ModelConfig:
@@ -121,5 +121,17 @@ PARAM_GRIDS = {
 PATHS = {
     "processed_data": "data/processed",
     "lab_encoders": "data/processed/label_encoder.joblib",
-    "scalers": "data/processed/scaler.joblib"
+    "scalers": "data/processed/scaler.joblib",
+    "models": "models",  # Root level models directory for portability
+    "artifacts": "mlflow_data/artifacts" # Artifact store
+}
+
+MODEL_NAME_MAP = {
+    "rf": "RandomForest",
+    "xgb": "XGBoost",
+    "svm": "SVM",
+    "catboost": "CatBoost",
+    "lr": "LogisticRegression",
+    "ensemble": "VotingEnsemble",
+    "stacking": "StackingClassifier"
 }

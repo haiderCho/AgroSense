@@ -5,12 +5,19 @@ import numpy as np
 import mlflow
 import mlflow.sklearn
 from typing import Dict, Any, Union, List
+from pathlib import Path
 from backend.models.config import PATHS, MLflowConfig
 
 class MultiModelPredictor:
+    """
+    Multi-model predictor that loads models from named directories (joblib format).
+    Falls back to MLflow if joblib models are not available.
+    """
+    
     def __init__(self, experiment_name: str = None):
         """
-        Initializes the predictor by loading all available models from the latest MLflow run.
+        Initializes the predictor by loading all available models.
+        Priority: joblib exports > MLflow runs
         """
         self.models: Dict[str, Any] = {}
         self.label_encoder = None
@@ -18,16 +25,53 @@ class MultiModelPredictor:
         self.experiment_name = experiment_name or MLflowConfig.experiment_name
         
         self.load_resources()
-        self.load_latest_models()
+        
+        # Try loading from joblib first, fallback to MLflow
+        if not self.load_models_from_disk():
+            print("No joblib models found, falling back to MLflow...")
+            # Set URI explicitly for the fallback
+            mlflow.set_tracking_uri(MLflowConfig.tracking_uri)
+            self.load_latest_models()
 
     def load_resources(self):
         """Loads preprocessing artifacts (scaler, label encoder)."""
         try:
-            self.label_encoder = joblib.load(PATHS["lab_encoders"])
-            self.scaler = joblib.load(PATHS["scalers"])
-            print("Resources loaded successfully.")
+            encoder_path = PATHS["lab_encoders"]
+            scaler_path = PATHS["scalers"]
+            
+            self.label_encoder = joblib.load(encoder_path)
+            self.scaler = joblib.load(scaler_path)
+            print(f"Resources loaded from {Path(encoder_path).parent}")
         except FileNotFoundError as e:
-            raise FileNotFoundError(f"Preprocessing artifacts not found at defined paths: {e}")
+            raise FileNotFoundError(f"Preprocessing artifacts not found: {e}")
+
+    def load_models_from_disk(self) -> bool:
+        """
+        Loads models from the named models directory (joblib format).
+        Returns True if at least one model was loaded.
+        """
+        # Ensure it's a Path object
+        models_dir = Path(PATHS["models"])
+        
+        if not models_dir.exists():
+            print(f"Models directory not found: {models_dir}")
+            return False
+        
+        for model_dir in models_dir.iterdir():
+            if model_dir.is_dir():
+                model_path = model_dir / "model.joblib"
+                if model_path.exists():
+                    try:
+                        model_name = model_dir.name
+                        self.models[model_name] = joblib.load(model_path)
+                        print(f"Loaded {model_name} from {model_path}")
+                    except Exception as e:
+                        print(f"Failed to load {model_dir.name}: {e}")
+        
+        if self.models:
+            print(f"Loaded models from disk: {list(self.models.keys())}")
+            return True
+        return False
 
     def load_latest_models(self):
         """Scans MLflow for the latest run of each model type and loads them."""
@@ -70,7 +114,7 @@ class MultiModelPredictor:
                     except Exception as e:
                         print(f"Failed to load {model_type}: {e}")
             
-            print(f"Loaded models: {list(self.models.keys())}")
+            print(f"Loaded models from MLflow: {list(self.models.keys())}")
             
         except Exception as e:
             print(f"Error scanning MLflow: {e}")
@@ -155,3 +199,4 @@ class MultiModelPredictor:
             "consensus_crop": consensus_crop,
             "predictions": predictions_list
         }
+

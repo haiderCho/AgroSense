@@ -1,0 +1,10 @@
+artifact_location: file:///C:/Users/NOBEL/GitHub/AgroSense/mlflow_data/806662760878199870/models/m-4b903394429b4b1a900cb657b1b131c2/artifacts
+creation_timestamp: 1768712083804
+experiment_id: '806662760878199870'
+last_updated_timestamp: 1768712087265
+model_id: m-4b903394429b4b1a900cb657b1b131c2
+model_type: null
+name: model
+source_run_id: b8d80f35d0414128af2c5935e60eac3f
+status: 2
+status_message: null

@@ -8,14 +8,18 @@ const Card = React.forwardRef<
   <div
     ref={ref}
     className={cn(
-      "rounded-xl border border-border bg-card text-card-foreground shadow-sm relative overflow-hidden group",
+      "rounded-xl border border-border bg-card text-card-foreground shadow-sm relative overflow-hidden group transition-all duration-300 hover:shadow-md",
       className
     )}
     {...props}
   >
     {/* Anti-Slop: Geometry/Texture detail */}
-    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity" />
-    {props.children}
+    <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 pointer-events-none" />
+    {/* Inner Border Highlight */}
+    <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+    <div className="relative z-10 w-full">
+      {props.children}
+    </div>
   </div>
 ))
 Card.displayName = "Card"
