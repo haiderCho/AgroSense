@@ -1,2 +1,9 @@
 # Planning folder (internal)
 .plan/
+
+# Environments and artifacts
+.venv/
+__pycache__/
+*.pyc
+mlflow_data/
+backend_test_log.txt

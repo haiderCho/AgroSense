@@ -1,0 +1,46 @@
+version: "3.8"
+
+services:
+  # Backend Service (FastAPI)
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: agrosense-backend
+    ports:
+      - "8000:8000"
+    environment:
+      - PORT=8000
+    volumes:
+      # Mount models/data if needed for persistence or dev (optional)
+      # - ./models:/app/models
+      # - ./data:/app/data
+      - ./backend:/app/backend
+    restart: always
+    networks:
+      - agrosense-net
+
+  # Frontend Service (Next.js)
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: agrosense-frontend
+    ports:
+      - "3000:3000"
+    environment:
+      # In Docker network, backend is reachable by service name "backend"
+      # But since the browser runs on the host, we usually need the public URL.
+      # However, for SSR (Server Side Rendering) inside the container, it needs "http://backend:8000".
+      # For client-side fetch (browser), it needs "http://localhost:8000".
+      # Next.js allows separate runtime and build time envs.
+      - NEXT_PUBLIC_API_URL=http://localhost:8000/predict
+    depends_on:
+      - backend
+    restart: always
+    networks:
+      - agrosense-net
+
+networks:
+  agrosense-net:
+    driver: bridge

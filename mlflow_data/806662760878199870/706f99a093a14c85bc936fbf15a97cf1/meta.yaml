@@ -1,0 +1,14 @@
+artifact_uri: file:///C:/Users/NOBEL/GitHub/AgroSense/mlflow_data/806662760878199870/706f99a093a14c85bc936fbf15a97cf1/artifacts
+end_time: 1768712739091
+entry_point_name: ''
+experiment_id: '806662760878199870'
+lifecycle_stage: active
+run_id: 706f99a093a14c85bc936fbf15a97cf1
+run_name: train_ensemble
+source_name: ''
+source_type: 4
+source_version: ''
+start_time: 1768712727806
+status: 3
+tags: []
+user_id: NOBEL
