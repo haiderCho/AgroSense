@@ -20,4 +20,5 @@ export interface PredictionResponse {
     explanation?: Record<string, number>; // Feature importance
   }[];
   consensus_crop: string;
+  input_data: PredictionFormData;
 }

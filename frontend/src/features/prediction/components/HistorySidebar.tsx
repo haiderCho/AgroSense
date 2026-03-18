@@ -74,8 +74,8 @@ export function HistorySidebar({ history, onClear }: HistorySidebarProps) {
                       className="w-full flex items-center justify-between p-4 rounded-lg bg-muted/50 border border-transparent hover:border-primary/30 hover:bg-muted transition-all text-left group"
                     >
                       <div>
-                        <div className="font-bold text-foreground group-hover:text-primary transition-colors">
-                          {item.label.split(' (')[0]}
+                        <div className="font-bold text-foreground group-hover:text-primary transition-colors capitalize">
+                          {item.result.consensus_crop}
                         </div>
                         <div className="text-xs text-muted-foreground mt-1 font-mono">
                           {new Date(item.timestamp).toLocaleDateString()} • {new Date(item.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}

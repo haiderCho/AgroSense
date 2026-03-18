@@ -71,13 +71,13 @@ function ResultPageContent() {
 
   if (!result) {
     return (
-      <div className="container py-16 text-center animate-in fade-in zoom-in duration-300">
-        <h1 className="text-2xl font-bold mb-4">Result Not Found</h1>
-        <p className="text-muted-foreground mb-8">
+      <div className="container py-12 text-center">
+        <h1 className="text-xl font-bold mb-2">Result Not Found</h1>
+        <p className="text-sm text-muted-foreground mb-6">
             We couldn&apos;t locate this analysis record. It may have been cleared from your local history.
         </p>
         <Link href="/analyze">
-          <Button variant="default" className="shadow-lg hover:scale-105 transition-transform">
+          <Button variant="default" size="sm">
              Create New Analysis
           </Button>
         </Link>
@@ -86,10 +86,10 @@ function ResultPageContent() {
   }
 
   return (
-    <div className="container py-16 px-4 md:px-6 max-w-4xl mx-auto">
-      <div className="mb-6 print:hidden">
-        <Link href="/analyze" className="inline-flex items-center text-sm text-muted-foreground hover:text-primary transition-colors">
-          <ArrowLeft className="w-4 h-4 mr-2" />
+    <div className="container py-6 px-4 md:px-6 max-w-3xl mx-auto">
+      <div className="mb-4 print:hidden">
+        <Link href="/analyze" className="inline-flex items-center text-xs text-muted-foreground hover:text-primary transition-colors">
+          <ArrowLeft className="w-3 h-3 mr-1" />
           Back to Analyze
         </Link>
       </div>

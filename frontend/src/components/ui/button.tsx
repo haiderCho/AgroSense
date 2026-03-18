@@ -14,34 +14,32 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
     
     // Variants logic
     const variants = {
-      default: "bg-primary text-primary-foreground hover:bg-primary/90 shadow-[0_0_15px_-3px_rgba(34,197,94,0.4)]",
-      outline: "border border-input bg-background hover:bg-accent hover:text-accent-foreground",
-      ghost: "hover:bg-accent hover:text-accent-foreground",
+      default: "bg-primary text-primary-foreground hover:bg-primary/90",
+      outline: "border border-border bg-background hover:bg-muted hover:text-foreground",
+      ghost: "hover:bg-muted hover:text-foreground",
       destructive: "bg-destructive text-destructive-foreground hover:bg-destructive/90",
     }
     
     const sizes = {
-      default: "h-10 px-4 py-2",
-      sm: "h-9 rounded-md px-3",
-      lg: "h-12 rounded-md px-8 text-lg",
-      icon: "h-10 w-10",
+      default: "h-8 px-3 py-1.5",
+      sm: "h-7 rounded-md px-2 text-xs",
+      lg: "h-10 rounded-md px-6 text-base",
+      icon: "h-8 w-8",
     }
-
+ 
     return (
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
+      <button
         className={cn(
-          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50",
+          "inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 active:scale-[0.98]",
           variants[variant],
           sizes[size],
           className
         )}
         ref={ref}
-        {...props}
+        {...(props as any)}
       >
         {children}
-      </motion.button>
+      </button>
     )
   }
 )

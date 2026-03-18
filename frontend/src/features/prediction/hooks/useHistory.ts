@@ -1,56 +1,68 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { PredictionResponse } from "../types";
+import { useState, useEffect, useCallback } from "react";
+import { PredictionResponse } from "../types/schema";
 
-const HISTORY_KEY = "agrosense_history";
-const MAX_HISTORY = 5;
+const STORAGE_KEY = "agrosense_history";
 
 export interface HistoryItem {
   id: string;
   timestamp: number;
+  input: Record<string, number>;
   result: PredictionResponse;
-  label: string; // e.g., "Rice (98%)"
 }
 
 export function useHistory() {
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [isLoaded, setIsLoaded] = useState(false);
 
-  // Load from localStorage on mount
   useEffect(() => {
-    const saved = localStorage.getItem(HISTORY_KEY);
-    if (saved) {
+    const stored = localStorage.getItem(STORAGE_KEY);
+    if (stored) {
       try {
-        setHistory(JSON.parse(saved));
+        setHistory(JSON.parse(stored));
       } catch (e) {
         console.error("Failed to parse history", e);
       }
     }
+    setIsLoaded(true);
   }, []);
 
-  const addToHistory = (result: PredictionResponse) => {
-    const topPrediction = result.predictions.sort((a, b) => b.confidence - a.confidence)[0];
-    const id = crypto.randomUUID();
+  const addToHistory = useCallback((input: Record<string, number>, result: PredictionResponse) => {
     const newItem: HistoryItem = {
-      id,
+      id: Math.random().toString(36).substring(2, 9),
       timestamp: Date.now(),
-      result,
-      label: `${topPrediction.crop} (${Math.round(topPrediction.confidence * 100)}%)`
+      input,
+      // Sort predictions by confidence descending without mutating original result
+      result: {
+        ...result,
+        predictions: [...result.predictions].sort((a, b) => b.confidence - a.confidence)
+      }
     };
 
-    setHistory((prev) => {
-      const newHistory = [newItem, ...prev].slice(0, MAX_HISTORY);
-      localStorage.setItem(HISTORY_KEY, JSON.stringify(newHistory));
-      return newHistory;
+    setHistory(prev => {
+      const updated = [newItem, ...prev].slice(0, 50); // Keep last 50
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(updated));
+      return updated;
     });
+    
+    return newItem.id;
+  }, []);
 
-    return id;
-  };
-
-  const clearHistory = () => {
+  const clearHistory = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
     setHistory([]);
-    localStorage.removeItem(HISTORY_KEY);
-  };
+  }, []);
 
-  return { history, addToHistory, clearHistory };
+  const getHistoryItem = useCallback((id: string) => {
+    return history.find(item => item.id === id);
+  }, [history]);
+
+  return {
+    history,
+    isLoaded,
+    addToHistory,
+    clearHistory,
+    getHistoryItem
+  };
 }

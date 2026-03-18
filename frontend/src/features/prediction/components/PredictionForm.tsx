@@ -1,25 +1,37 @@
 "use client";
 
+import React, { useCallback } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { PredictionFormSchema, type PredictionFormData, type PredictionResponse } from "../types";
+import { Sprout, Beaker, Thermometer, Droplets, Wind, TestTube, Loader2 } from "lucide-react";
+import { PredictionFormSchema, type PredictionFormData, type PredictionResponse } from "../types/schema";
+import { usePredictCrop } from "../api/usePredictCrop";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
-import { motion } from "framer-motion";
-import { Loader2, Sprout } from "lucide-react";
-import { usePredictCrop } from "../api/usePredictCrop";
+import { toast } from "@/components/ui/toast";
+import { cn } from "@/lib/utils";
 
 interface PredictionFormProps {
-  onAnalysisComplete: (result: PredictionResponse) => void;
+  onSuccess: (data: PredictionFormData, result: PredictionResponse) => void;
 }
 
-export function PredictionForm({ onAnalysisComplete }: PredictionFormProps) {
-  const { mutate: predict, isPending } = usePredictCrop();
+const formItems = [
+  { id: "N", label: "Nitrogen", icon: <Beaker className="w-4 h-4" />, placeholder: "e.g. 90", unit: "mg/kg" },
+  { id: "P", label: "Phosphorus", icon: <TestTube className="w-4 h-4" />, placeholder: "e.g. 42", unit: "mg/kg" },
+  { id: "K", label: "Potassium", icon: <Wind className="w-4 h-4" />, placeholder: "e.g. 43", unit: "mg/kg" },
+  { id: "temperature", label: "Temperature", icon: <Thermometer className="w-4 h-4" />, placeholder: "e.g. 25", unit: "°C" },
+  { id: "humidity", label: "Humidity", icon: <Droplets className="w-4 h-4" />, placeholder: "e.g. 70", unit: "%" },
+  { id: "ph", label: "pH Level", icon: <Sprout className="w-4 h-4" />, placeholder: "e.g. 6.5", unit: "0-14" },
+  { id: "rainfall", label: "Rainfall", icon: <Droplets className="w-4 h-4" />, placeholder: "e.g. 100", unit: "mm" },
+] as const;
 
+export const PredictionForm = React.memo(({ onSuccess }: PredictionFormProps) => {
+  const { mutate, isPending } = usePredictCrop();
+  
   const form = useForm<PredictionFormData>({
-    resolver: zodResolver(PredictionFormSchema) as Resolver<PredictionFormData>,
+    resolver: zodResolver(PredictionFormSchema) as unknown as Resolver<PredictionFormData>,
     defaultValues: {
       N: 90,
       P: 42,
@@ -31,177 +43,98 @@ export function PredictionForm({ onAnalysisComplete }: PredictionFormProps) {
     },
   });
 
-  function onSubmit(data: PredictionFormData) {
-    predict(data, {
-      onSuccess: (result) => {
-         onAnalysisComplete(result);
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = form;
+
+  const onSubmit = useCallback(async (data: Record<string, number>) => {
+    mutate(data as PredictionFormData, {
+      onSuccess: (result: PredictionResponse) => {
+        onSuccess(data as PredictionFormData, result);
+        toast("Analysis complete!", "success");
       },
-      onError: () => {
-         alert("Failed to connect to AgroSense API. Ensure backend is running on port 8000.");
-      }
+      onError: (err: Error) => {
+        console.error(err);
+        toast("Analysis failed. Please try again.", "error");
+      },
     });
-  }
-
-  const container = {
-    hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: {
-        staggerChildren: 0.1
-      }
-    }
-  };
-
-  const item = {
-    hidden: { opacity: 0, y: 20 },
-    show: { opacity: 1, y: 0 }
-  };
+  }, [mutate, onSuccess]);
 
   return (
-    <Card className="w-full max-w-2xl mx-auto backdrop-blur-sm bg-card/95 border-primary/20 shadow-2xl">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Sprout className="w-6 h-6 text-primary" />
-          <span>Soil Analysis & Crop Prediction</span>
+    <Card className="w-full border-border shadow-sm rounded-lg overflow-hidden">
+      <CardHeader className="p-5 pb-4">
+        <CardTitle className="text-xl font-bold flex items-center gap-2.5">
+            <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Sprout className="w-5 h-5 text-primary" />
+            </div>
+            Soil Diagnostic Input
         </CardTitle>
-        <CardDescription>
-          Enter your soil parameters below. Our multi-model AI ensemble will analyze suitability.
+        <CardDescription className="text-sm pt-0.5 opacity-80">
+          Provide accurate soil and environmental metrics for optimal crop recommendation.
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
-          <motion.div 
-            variants={container}
-            initial="hidden"
-            animate="show"
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
-          >
-            {/* Nitrogen */}
-            <motion.div variants={item} className="space-y-2">
-              <Label htmlFor="N">Nitrogen (N)</Label>
-              <Input
-                id="N"
-                type="number"
-                {...form.register("N")}
-                className="font-mono"
-              />
-              {form.formState.errors.N && (
-                <p className="text-xs text-destructive">{form.formState.errors.N.message}</p>
-              )}
-            </motion.div>
+      <CardContent className="p-6">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {formItems.map((field) => (
+              <div key={field.id} className="space-y-1.5">
+                <div className="flex items-center justify-between px-0.5">
+                  <Label 
+                    htmlFor={field.id} 
+                    className="flex items-center gap-1.5 text-xs font-bold text-muted-foreground uppercase tracking-wider"
+                  >
+                    {field.icon}
+                    {field.label}
+                  </Label>
+                  <span className="text-[10px] text-muted-foreground/60 font-mono font-bold">
+                    {field.unit}
+                  </span>
+                </div>
+                <div className="relative">
+                  <Input
+                    id={field.id}
+                    type="number"
+                    step={field.id === "ph" || field.id === "temperature" || field.id === "rainfall" ? "0.1" : "1"}
+                    placeholder={field.placeholder}
+                    {...register(field.id as keyof PredictionFormData)}
+                    className={cn(
+                      "h-10 text-sm px-3 rounded-lg bg-background/50 focus-visible:ring-primary/20 transition-all",
+                      errors[field.id as keyof PredictionFormData] ? "border-destructive focus-visible:ring-destructive" : ""
+                    )}
+                    aria-invalid={!!errors[field.id as keyof PredictionFormData]}
+                  />
+                  {errors[field.id as keyof PredictionFormData] && (
+                    <p className="text-[10px] text-destructive mt-1 font-bold">
+                      {errors[field.id as keyof PredictionFormData]?.message}
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
 
-            {/* Phosphorus */}
-            <motion.div variants={item} className="space-y-2">
-              <Label htmlFor="P">Phosphorus (P)</Label>
-              <Input
-                id="P"
-                type="number"
-                {...form.register("P")}
-                className="font-mono"
-              />
-              {form.formState.errors.P && (
-                <p className="text-xs text-destructive">{form.formState.errors.P.message}</p>
-              )}
-            </motion.div>
-
-            {/* Potassium */}
-            <motion.div variants={item} className="space-y-2">
-              <Label htmlFor="K">Potassium (K)</Label>
-              <Input
-                id="K"
-                type="number"
-                {...form.register("K")}
-                className="font-mono"
-              />
-              {form.formState.errors.K && (
-                <p className="text-xs text-destructive">{form.formState.errors.K.message}</p>
-              )}
-            </motion.div>
-            
-             {/* pH Level */}
-             <motion.div variants={item} className="space-y-2">
-              <Label htmlFor="ph">pH Level</Label>
-              <Input
-                id="ph"
-                type="number"
-                step="0.1"
-                {...form.register("ph")}
-                className="font-mono"
-              />
-              {form.formState.errors.ph && (
-                <p className="text-xs text-destructive">{form.formState.errors.ph.message}</p>
-              )}
-            </motion.div>
-
-            {/* Temperature */}
-            <motion.div variants={item} className="space-y-2">
-              <Label htmlFor="temperature">Temperature (°C)</Label>
-              <Input
-                id="temperature"
-                type="number"
-                step="0.1"
-                {...form.register("temperature")}
-                className="font-mono"
-              />
-              {form.formState.errors.temperature && (
-                <p className="text-xs text-destructive">{form.formState.errors.temperature.message}</p>
-              )}
-            </motion.div>
-
-            {/* Humidity */}
-            <motion.div variants={item} className="space-y-2">
-              <Label htmlFor="humidity">Humidity (%)</Label>
-              <Input
-                id="humidity"
-                type="number"
-                {...form.register("humidity")}
-                className="font-mono"
-              />
-              {form.formState.errors.humidity && (
-                <p className="text-xs text-destructive">{form.formState.errors.humidity.message}</p>
-              )}
-            </motion.div>
-
-             {/* Rainfall */}
-             <motion.div variants={item} className="md:col-span-2 space-y-2">
-              <Label htmlFor="rainfall">Rainfall (mm)</Label>
-              <Input
-                id="rainfall"
-                type="number"
-                step="0.1"
-                {...form.register("rainfall")}
-                className="font-mono"
-              />
-              {form.formState.errors.rainfall && (
-                <p className="text-xs text-destructive">{form.formState.errors.rainfall.message}</p>
-              )}
-            </motion.div>
-
-          </motion.div>
-
-          <motion.div
-             initial={{ opacity: 0 }}
-             animate={{ opacity: 1 }}
-             transition={{ delay: 0.8 }}
-             className="pt-4"
-          >
+          <div className="pt-6 border-t">
             <Button 
                 type="submit" 
-                className="w-full h-12 text-lg font-bold tracking-wide"
+                className="w-full h-12 text-base font-bold rounded-lg shadow-sm hover:shadow-md transition-all active:scale-[0.98]"
                 disabled={isPending}
             >
               {isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-5 w-5 animate-spin" />
-                  ANALYZING DATA...
-                </>
+                <div className="flex items-center gap-2">
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  <span>Processing...</span>
+                </div>
               ) : (
-                "RUN PREDICTION MODEL"
+                "Run Soil Analysis"
               )}
             </Button>
-          </motion.div>
+          </div>
         </form>
       </CardContent>
     </Card>
   );
-}
+});
+
+PredictionForm.displayName = "PredictionForm";

@@ -19,3 +19,4 @@ class SinglePrediction(BaseModel):
 class PredictionResponse(BaseModel):
     consensus_crop: str
     predictions: List[SinglePrediction]
+    input_data: PredictionRequest

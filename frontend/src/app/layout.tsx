@@ -1,25 +1,24 @@
 import type { Metadata } from "next";
 import { Outfit, Space_Mono } from "next/font/google";
 import "./globals.css";
-import QueryProvider from "@/providers/query-provider";
 import { ThemeProvider } from "@/providers/theme-provider";
+import QueryProvider from "@/providers/query-provider";
+import { ToastContainer } from "@/components/ui/toast";
 
 const outfit = Outfit({
   subsets: ["latin"],
   variable: "--font-outfit",
-  display: "swap",
 });
 
 const spaceMono = Space_Mono({
   weight: ["400", "700"],
   subsets: ["latin"],
   variable: "--font-space-mono",
-  display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "AgroSense - AI Crop Analysis",
-  description: "Next-gen precision agriculture platform.",
+  title: "AgroSense | Precision Agriculture Decision Support",
+  description: "Advanced crop recommendation system powered by multi-model machine learning and xAI.",
 };
 
 export default function RootLayout({
@@ -29,18 +28,16 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning>
-      <body
-        className={`${outfit.variable} ${spaceMono.variable} font-sans antialiased`}
-      >
+      <body className={`${outfit.variable} ${spaceMono.variable} font-sans antialiased`}>
         <ThemeProvider
           attribute="class"
-          defaultTheme="dark"
+          defaultTheme="system"
           enableSystem
           disableTransitionOnChange
         >
           <QueryProvider>
-            <div className="texture-overlay dark:opacity-[0.03] opacity-[0.02]" />
             {children}
+            <ToastContainer />
           </QueryProvider>
         </ThemeProvider>
       </body>

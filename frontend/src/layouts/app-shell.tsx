@@ -17,7 +17,7 @@ const SidebarItem = ({
   onClick,
   isCollapsed,
 }: {
-  icon: React.ElementType;
+  icon: React.ComponentType<{ className?: string }>;
   label: string;
   href: string;
   isActive: boolean;
@@ -26,43 +26,28 @@ const SidebarItem = ({
 }) => {
   return (
     <Link href={href} onClick={onClick}>
-      <motion.div
-        whileHover={{ x: isCollapsed ? 0 : 4 }}
+      <div
         className={cn(
-          "flex items-center gap-3 px-4 py-3 rounded-lg transition-colors relative group overflow-hidden",
+          "flex items-center gap-3 px-3 py-2 rounded-md transition-all relative group overflow-hidden",
           isActive
-            ? "bg-primary/10 text-primary"
+            ? "bg-primary/10 text-primary font-semibold"
             : "text-muted-foreground hover:text-foreground hover:bg-muted/50",
            isCollapsed && "justify-center px-2"
         )}
         title={isCollapsed ? label : undefined}
       >
-        {isActive && (
-          <motion.div
-            layoutId="active-sidebar-item"
-            className="absolute left-0 top-0 bottom-0 w-1 bg-primary rounded-r-full"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-          />
-        )}
-        <Icon className="w-5 h-5 shrink-0" />
+        <Icon className={cn("shrink-0", isCollapsed ? "w-5 h-5" : "w-4 h-4")} />
         {!isCollapsed && (
-            <motion.span 
-                initial={{ opacity: 0, width: 0 }} 
-                animate={{ opacity: 1, width: "auto" }}
-                exit={{ opacity: 0, width: 0 }}
-                className="font-medium whitespace-nowrap"
-            >
+             <span className="text-sm tracking-tight whitespace-nowrap">
                 {label}
-            </motion.span>
+             </span>
         )}
-      </motion.div>
+      </div>
     </Link>
   );
 };
 
-export default function AppShell({ children }: { children: React.ReactNode }) {
+export function AppShell({ children }: { children: React.ReactNode }) {
   const [isSidebarOpen, setIsSidebarOpen] = useState(false); // Mobile
   const [isCollapsed, setIsCollapsed] = useState(false); // Desktop
   const pathname = usePathname();
@@ -79,47 +64,37 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background text-foreground">
       {/* Mobile Overlay */}
-      <motion.div
-        initial={false}
-        animate={{
-          opacity: isSidebarOpen ? 1 : 0,
-          pointerEvents: isSidebarOpen ? "auto" : "none",
-        }}
-        className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm lg:hidden"
+      <div
+        className={cn(
+          "fixed inset-0 z-40 bg-black/40 lg:hidden transition-opacity",
+          isSidebarOpen ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        )}
         onClick={() => setIsSidebarOpen(false)}
       />
 
-      {/* Sidebar - Fix position logic */}
-      <motion.aside
-        initial={false}
-        animate={{
-          width: isCollapsed ? 80 : 280,
-        }}
+      {/* Sidebar - Fix width to 240px per UI-UX.md */}
+      <aside
         className={cn(
-            "fixed lg:sticky top-0 z-50 h-screen border-r border-border bg-card/50 backdrop-blur-xl transition-transform duration-300 ease-in-out lg:translate-x-0 overflow-y-auto overflow-x-hidden",
+            "fixed lg:sticky top-0 z-50 h-screen border-r border-border bg-card transition-all duration-200 ease-in-out lg:translate-x-0 overflow-y-auto overflow-x-hidden",
             !isSidebarOpen && "-translate-x-full lg:translate-x-0",
-             isCollapsed ? "w-[80px] min-w-[80px]" : "w-[280px] min-w-[280px]"
+             isCollapsed ? "w-[64px] min-w-[64px]" : "w-[240px] min-w-[240px]"
         )}
       >
-        <div className="flex flex-col h-full p-6">
-          <div className={cn("flex items-center mb-10", isCollapsed ? "justify-center" : "justify-between")}>
-            <Link href="/" className="flex items-center gap-2 group">
-              <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
+        <div className="flex flex-col h-full p-4">
+          <div className={cn("flex items-center mb-8", isCollapsed ? "justify-center" : "justify-between")}>
+            <Link href="/" className="flex items-center gap-2.5 group">
+              <div className="w-8 h-8 rounded-md bg-primary flex items-center justify-center shrink-0">
                 <Leaf className="w-5 h-5 text-primary-foreground" />
               </div>
               {!isCollapsed && (
-                 <motion.span 
-                    initial={{ opacity: 0 }} 
-                    animate={{ opacity: 1 }} 
-                    className="text-xl font-bold tracking-tight whitespace-nowrap"
-                 >
+                 <span className="text-xl font-bold tracking-tight whitespace-nowrap">
                     AgroSense
-                 </motion.span>
+                 </span>
               )}
             </Link>
              {/* Desktop Toggle */}
              {!isCollapsed && (
-                <Button variant="ghost" size="icon" className="hidden lg:flex" onClick={toggleCollapse}>
+                <Button variant="ghost" size="icon" className="hidden lg:flex h-8 w-8" onClick={toggleCollapse}>
                     <Menu className="w-4 h-4" />
                 </Button>
              )}
@@ -127,23 +102,23 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             <Button
               variant="ghost"
               size="icon"
-              className="lg:hidden"
+              className="lg:hidden h-8 w-8"
               onClick={toggleSidebar}
             >
               <X className="w-5 h-5" />
             </Button>
           </div>
           
-          {/* Centered Desktop Toggle when collapsed */}
+           {/* Centered Desktop Toggle when collapsed */}
            {isCollapsed && (
                 <div className="hidden lg:flex justify-center mb-6">
-                     <Button variant="ghost" size="icon" onClick={toggleCollapse}>
+                     <Button variant="ghost" size="icon" className="h-8 w-8" onClick={toggleCollapse}>
                         <Menu className="w-4 h-4" />
                     </Button>
                 </div>
             )}
 
-          <nav className="space-y-2 flex-1">
+          <nav className="space-y-1 flex-1">
             {menuItems.map((item) => (
               <SidebarItem
                 key={item.href}
@@ -155,40 +130,46 @@ export default function AppShell({ children }: { children: React.ReactNode }) {
             ))}
           </nav>
 
-          <div className="pt-6 border-t border-border mt-auto">
-             <div className={cn("flex items-center", isCollapsed ? "justify-center" : "justify-between px-2")}>
-                {!isCollapsed && <span className="text-xs text-muted-foreground mr-2">v2.0.0</span>}
+          <div className="pt-4 border-t border-border mt-auto">
+             <div className={cn("flex items-center justify-between", isCollapsed && "justify-center")}>
+                {!isCollapsed && <span className="text-xs text-muted-foreground font-medium">AgroSense v2.0</span>}
                 <ThemeToggle />
              </div>
           </div>
         </div>
-      </motion.aside>
+      </aside>
 
-      {/* Main Content - Allow natural window scroll */}
-      <div className="flex-1 flex flex-col min-h-screen w-full">
-        {/* Mobile Header */}
-        <header className="lg:hidden flex items-center justify-between p-4 border-b border-border bg-background/80 backdrop-blur-md sticky top-0 z-30">
-          <div className="flex items-center gap-2">
-             <div className="w-6 h-6 rounded-md bg-primary flex items-center justify-center">
-                <Leaf className="w-4 h-4 text-primary-foreground" />
-              </div>
-              <span className="font-bold">AgroSense</span>
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0 bg-background">
+        {/* Header - Fix height to h-14 per UI-UX.md */}
+        <header className="h-14 border-b bg-background flex items-center justify-between px-6 sticky top-0 z-30">
+          <div className="flex items-center gap-3">
+             <Button
+                variant="ghost"
+                size="icon"
+                className="lg:hidden h-9 w-9"
+                onClick={toggleSidebar}
+              >
+                <Menu className="w-5 h-5" />
+              </Button>
+             <div className="hidden lg:flex items-center gap-2 text-sm text-muted-foreground font-medium">
+                <span>Platform</span>
+                <span className="opacity-30">/</span>
+                <span className="text-foreground capitalize">{pathname.split("/")[1] || "Overview"}</span>
+             </div>
           </div>
-          <Button variant="ghost" size="icon" onClick={toggleSidebar}>
-            <Menu className="w-5 h-5" />
-          </Button>
+
+          <div className="flex items-center gap-4">
+             <div className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" title="System Status: Online" />
+             <ThemeToggle />
+          </div>
         </header>
 
-        <main className="flex-1 p-4 lg:p-8 w-full max-w-[1400px] mx-auto">
-           <motion.div
-                key={pathname}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.4, ease: "easeOut" }}
-                className="h-full"
-           >
+        {/* Normal Content Padding (24-32px) */}
+        <main className="flex-1 p-6 lg:p-10 w-full max-w-[1500px] mx-auto overflow-x-hidden">
+           <div className="h-full">
               {children}
-           </motion.div>
+           </div>
         </main>
       </div>
     </div>

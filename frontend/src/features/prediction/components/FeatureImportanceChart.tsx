@@ -43,7 +43,7 @@ export function FeatureImportanceChart({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="h-[220px] w-full">
+        <div className="h-[180px] w-full">
           <ResponsiveContainer
             width="100%"
             height="100%"
@@ -64,28 +64,28 @@ export function FeatureImportanceChart({
               <YAxis
                 dataKey="feature"
                 type="category"
-                width={110}
+                width={100}
                 tick={{
                   fill: "hsl(var(--foreground))",
-                  fontSize: 11,
-                  fontWeight: 500,
+                  fontSize: 10,
                 }}
                 axisLine={false}
                 tickLine={false}
               />
               <Tooltip
-                cursor={{ fill: "hsl(var(--muted)/0.3)" }}
+                cursor={{ fill: "hsl(var(--muted)/0.2)" }}
                 contentStyle={{
                   backgroundColor: "hsl(var(--card))",
                   borderColor: "hsl(var(--border))",
-                  borderRadius: "8px",
+                  borderRadius: "6px",
+                  fontSize: "11px"
                 }}
                 formatter={(value: number | undefined) => [
                   `${value ?? 0}%`,
                   "Impact",
                 ]}
               />
-              <Bar dataKey="value" radius={[0, 6, 6, 0]} barSize={20}>
+              <Bar dataKey="value" radius={[0, 2, 2, 0]} barSize={16}>
                 {data.map((entry, index) => (
                   <Cell
                     key={`cell-${index}`}

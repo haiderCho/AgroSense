@@ -1,42 +1,82 @@
-from fastapi import FastAPI, HTTPException
+import os
+import time
+import logging
+from contextlib import asynccontextmanager
+from typing import Dict, List, Optional
+from collections import Counter
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.middleware.gzip import GZipMiddleware
+from fastapi.concurrency import run_in_threadpool
+import uvicorn
+
 from backend.api.schemas import PredictionRequest, PredictionResponse
 from backend.inference.predictor import MultiModelPredictor
-import uvicorn
-import os
+
+# Setup Logging
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger("agrosense-api")
+
+# Global Predictor Instance
+predictor: Optional[MultiModelPredictor] = None
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Modern lifecyle management replacing deprecated on_event."""
+    global predictor
+    try:
+        predictor = MultiModelPredictor()
+        logger.info("AgroSense Predictor initialized successfully.")
+    except Exception as e:
+        logger.error(f"Failed to initialize predictor: {e}")
+    yield
+    # Cleanup if needed
+    predictor = None
+    logger.info("AgroSense Predictor shut down.")
 
 app = FastAPI(
     title="AgroSense API",
     description="Multi-model Crop Recommendation Engine with xAI",
-    version="2.0"
+    version="2.1",
+    lifespan=lifespan
 )
 
-# CORS (Allow Frontend)
+# Middleware
+app.add_middleware(GZipMiddleware, minimum_size=1000)
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"], # In production, restrict to Vercel domain
+    allow_origins=["http://localhost:3000"], # Restrict to frontend local dev
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
-# Global Predictor Instance
-# We utilize the "lifespan" or just lazy load on startup. 
-# Since Render/Container startup allows it, we initialize globally.
-predictor = None
-
-@app.on_event("startup")
-async def startup_event():
-    global predictor
-    try:
-        predictor = MultiModelPredictor()
-        print("AgroSense Predictor initialized successfully.")
-    except Exception as e:
-        print(f"Failed to initialize predictor: {e}")
+@app.middleware("http")
+async def add_process_time_header(request: Request, call_next):
+    """Add X-Process-Time header for performance monitoring."""
+    start_time = time.perf_counter()
+    response = await call_next(request)
+    process_time = time.perf_counter() - start_time
+    response.headers["X-Process-Time"] = str(process_time)
+    return response
 
 @app.get("/")
+def index():
+    return {"message": "AgroSense API is running", "version": "2.1"}
+
+@app.get("/health")
 def health_check():
-    return {"status": "online", "models_loaded": list(predictor.models.keys()) if predictor else []}
+    """Detailed health check for orchestration."""
+    return {
+        "status": "online" if predictor else "initialization_failed",
+        "models_loaded": list(predictor.models.keys()) if predictor else [],
+        "timestamp": time.time()
+    }
 
 @app.get("/status")
 def get_status():
@@ -50,24 +90,16 @@ def get_status():
         }
     
     loaded_models = list(predictor.models.keys())
-    total_expected = 7  # Number of expected models
+    total_expected = 7
     
-    if len(loaded_models) >= total_expected:
-        return {
-            "status": "ready",
-            "models_loaded": len(loaded_models),
-            "models_total": total_expected,
-            "message": "All models loaded"
-        }
-    else:
-        return {
-            "status": "partial",
-            "models_loaded": len(loaded_models),
-            "models_total": total_expected,
-            "message": f"Loaded {len(loaded_models)}/{total_expected} models"
-        }
-
-from fastapi.concurrency import run_in_threadpool
+    status = "ready" if len(loaded_models) >= total_expected else "partial"
+    
+    return {
+        "status": status,
+        "models_loaded": len(loaded_models),
+        "models_total": total_expected,
+        "message": "All models loaded" if status == "ready" else f"Loaded {len(loaded_models)}/{total_expected} models"
+    }
 
 @app.post("/predict", response_model=PredictionResponse)
 async def predict(request: PredictionRequest):
@@ -75,14 +107,18 @@ async def predict(request: PredictionRequest):
         raise HTTPException(status_code=503, detail="Predictor is starting up or failed to initialize")
     
     try:
-        # Convert Request model to Dict
-        input_data = request.dict()
+        # Convert Request model to Dict (Pydantic v2 modern way)
+        input_data = request.model_dump()
         
         # Run Inference in threadpool to avoid blocking event loop
         result = await run_in_threadpool(predictor.predict, input_data)
         
+        # Add input data to response for simulation/tracking
+        result["input_data"] = input_data
+        
         return result
     except Exception as e:
+        logger.error(f"Inference error: {e}")
         raise HTTPException(status_code=500, detail=str(e))
 
 if __name__ == "__main__":

@@ -1,8 +1,9 @@
 "use client";
 import { motion } from "framer-motion";
 import { PredictionResponse } from "../types";
+import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, AlertTriangle, Award, Medal, Trophy, Printer } from "lucide-react";
+import { AlertTriangle, Award, Medal, Trophy, Printer, Sprout, Leaf, CheckCircle2 } from "lucide-react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { useRef } from "react";
@@ -41,7 +42,7 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
   // Handle empty predictions
   if (!result.predictions || result.predictions.length === 0) {
     return (
-      <Card className="border-destructive/50 p-8 text-center">
+      <Card className="border-destructive/50 p-6 text-center rounded-lg bg-card">
         <AlertTriangle className="w-12 h-12 mx-auto mb-4 text-destructive" />
         <h2 className="text-xl font-bold mb-2">No Predictions Available</h2>
         <p className="text-muted-foreground mb-4">
@@ -53,8 +54,6 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
       </Card>
     );
   }
-
-
 
   // Sort predictions by confidence
   const sortedPredictions = [...result.predictions].sort((a, b) => b.confidence - a.confidence);
@@ -86,7 +85,7 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
       <ReportHeader />
 
       {/* Header Actions */}
-      <div className="flex justify-between items-center print:hidden">
+      <div className="flex justify-between items-center print:hidden border-b pb-4">
          <h2 className="text-2xl font-bold">Analysis Results</h2>
          <Button variant="outline" size="sm" onClick={handlePrint} className="gap-2">
             <Printer className="w-4 h-4" /> Export Report
@@ -98,24 +97,24 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
         <motion.div
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="flex items-center justify-center gap-3 p-4 rounded-lg bg-primary/10 border border-primary/30"
+          className="flex items-center justify-center gap-3 p-3 rounded-lg bg-primary/10 border border-primary/30"
         >
           <CheckCircle2 className="w-6 h-6 text-primary" />
           <span className="text-primary font-medium">
-            Strong Consensus: All {result.predictions.length} models agree on <strong className="capitalize">{topPrediction.crop}</strong>
+            Strong Consensus: All {result.predictions.length} models agree on <strong className="capitalize underline underline-offset-4 decoration-primary/40">{topPrediction.crop}</strong>
           </span>
         </motion.div>
       )}
 
       {/* Top 3 Model Predictions */}
       <div>
-        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4 flex justify-between items-center">
-          <span>Top 3 Model Consensus</span>
+        <h3 className="text-sm font-medium text-muted-foreground uppercase tracking-wider mb-4 flex justify-between items-center px-1">
+          <span>Top 3 Model Consensus Matrix</span>
           <span className="text-xs normal-case bg-secondary px-2 py-1 rounded text-foreground/70">
             Ensemble Agreement: {isStrongConsensus ? 'High' : 'Moderate'}
           </span>
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {top3Predictions.map((pred, index) => (
             <motion.div
               key={`${pred.model}-${index}`}
@@ -124,7 +123,7 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
               transition={{ delay: index * 0.1 }}
               className="print:break-inside-avoid"
             >
-              <Card className={`h-full transition-all hover:scale-[1.02] ${rankColors[index]} border-opacity-50`}>
+              <Card className={cn("h-full transition-all hover:scale-[1.02] border-opacity-50 rounded-lg", rankColors[index])}>
                 <CardContent className="pt-6">
                   <div className="flex items-start justify-between mb-2">
                     <div className="flex items-center gap-2">
@@ -134,20 +133,20 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
                       </span>
                     </div>
                     <div className="text-right">
-                      <span className="text-2xl font-bold font-mono">
+                      <span className="text-2xl font-bold font-mono tabular-nums">
                         {Math.round(pred.confidence * 100)}%
                       </span>
                     </div>
                   </div>
-                  <p className="text-xs text-muted-foreground mb-2 font-mono uppercase">
-                    {pred.model}
+                  <p className="text-xs text-muted-foreground mb-2 font-mono uppercase tracking-tighter">
+                    {pred.model} Intelligence
                   </p>
-                  <h4 className={`text-2xl font-bold tracking-tight capitalize ${index === 0 ? 'text-primary' : 'text-foreground'}`}>
+                  <h4 className={cn("text-2xl font-bold tracking-tight capitalize", index === 0 ? 'text-primary' : 'text-foreground')}>
                     {pred.crop}
                   </h4>
                   {index === 0 && (
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
-                      <CheckCircle2 className="w-3 h-3" /> Best Match
+                    <p className="text-xs text-primary mt-3 flex items-center gap-1.5 font-bold uppercase tracking-wider">
+                      <Leaf className="w-3.5 h-3.5" /> Prime Recommendation
                     </p>
                   )}
                 </CardContent>
@@ -159,15 +158,16 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
 
       {/* AI Insights Block */}
       <div className="print:break-inside-avoid">
-         <InsightGenerator 
-            crop={topPrediction.crop} 
-            confidence={topPrediction.confidence} 
-            explanation={topPrediction.explanation} 
-         />
+         {topPrediction.explanation && (
+            <InsightGenerator 
+                crop={topPrediction.crop} 
+                explanation={topPrediction.explanation} 
+            />
+         )}
       </div>
 
       {/* Analytics Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
         <div className="print:break-inside-avoid">
             <ConfidenceChart predictions={result.predictions} />
         </div>
@@ -175,10 +175,10 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
             {topPrediction.explanation && Object.keys(topPrediction.explanation).length > 0 ? (
             <FeatureImportanceChart explanation={topPrediction.explanation} />
             ) : (
-            <Card className="h-full flex items-center justify-center p-6 text-muted-foreground border-dashed bg-muted/20">
+            <Card className="h-full flex items-center justify-center p-6 text-muted-foreground border-dashed bg-muted/20 rounded-lg">
                 <div className="text-center">
                 <AlertTriangle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                <p>xAI Data Unavailable</p>
+                <p className="font-medium">xAI Data Unavailable</p>
                 </div>
             </Card>
             )}
@@ -186,17 +186,19 @@ export function PredictionResult({ result, onReset }: PredictionResultProps) {
       </div>
 
       {/* What-If Simulator (Interactive) */}
-      <div className="print:hidden pt-4">
-         <SimulationLab />
+      <div className="print:hidden pt-4 border-t">
+         <SimulationLab initialData={result.input_data} />
       </div>
 
-      <div className="pt-4 text-center print:hidden">
-        <button 
+      <div className="pt-6 text-center print:hidden border-t">
+        <Button 
+          variant="ghost"
           onClick={onReset}
-          className="text-sm text-muted-foreground hover:text-primary transition-colors underline decoration-dotted underline-offset-4"
+          className="text-sm text-muted-foreground hover:text-primary transition-all underline decoration-dotted underline-offset-4 decoration-muted-foreground flex items-center gap-2 mx-auto"
         >
-          Analyze another sample
-        </button>
+          <Sprout className="w-4 h-4" />
+          Analyze another soil sample
+        </Button>
       </div>
     </div>
   );

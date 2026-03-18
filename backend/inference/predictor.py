@@ -4,15 +4,21 @@ import pandas as pd
 import numpy as np
 import mlflow
 import mlflow.sklearn
+import logging
 from typing import Dict, Any, Union, List
 from pathlib import Path
+from collections import Counter
 from backend.models.config import PATHS, MLflowConfig
+
+logger = logging.getLogger("agrosense-predictor")
 
 class MultiModelPredictor:
     """
     Multi-model predictor that loads models from named directories (joblib format).
     Falls back to MLflow if joblib models are not available.
     """
+    
+    FEATURE_ORDER = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
     
     def __init__(self, experiment_name: str = None):
         """
@@ -28,7 +34,7 @@ class MultiModelPredictor:
         
         # Try loading from joblib first, fallback to MLflow
         if not self.load_models_from_disk():
-            print("No joblib models found, falling back to MLflow...")
+            logger.warning("No joblib models found, falling back to MLflow...")
             # Set URI explicitly for the fallback
             mlflow.set_tracking_uri(MLflowConfig.tracking_uri)
             self.load_latest_models()
@@ -41,8 +47,9 @@ class MultiModelPredictor:
             
             self.label_encoder = joblib.load(encoder_path)
             self.scaler = joblib.load(scaler_path)
-            print(f"Resources loaded from {Path(encoder_path).parent}")
+            logger.info(f"Resources loaded from {Path(encoder_path).parent}")
         except FileNotFoundError as e:
+            logger.error(f"Preprocessing artifacts not found: {e}")
             raise FileNotFoundError(f"Preprocessing artifacts not found: {e}")
 
     def load_models_from_disk(self) -> bool:
@@ -54,7 +61,7 @@ class MultiModelPredictor:
         models_dir = Path(PATHS["models"])
         
         if not models_dir.exists():
-            print(f"Models directory not found: {models_dir}")
+            logger.error(f"Models directory not found: {models_dir}")
             return False
         
         for model_dir in models_dir.iterdir():
@@ -64,23 +71,23 @@ class MultiModelPredictor:
                     try:
                         model_name = model_dir.name
                         self.models[model_name] = joblib.load(model_path)
-                        print(f"Loaded {model_name} from {model_path}")
+                        logger.info(f"Loaded {model_name} from {model_path}")
                     except Exception as e:
-                        print(f"Failed to load {model_dir.name}: {e}")
+                        logger.error(f"Failed to load {model_dir.name}: {e}")
         
         if self.models:
-            print(f"Loaded models from disk: {list(self.models.keys())}")
+            logger.info(f"Loaded models from disk: {list(self.models.keys())}")
             return True
         return False
 
     def load_latest_models(self):
         """Scans MLflow for the latest run of each model type and loads them."""
-        print(f"Scanning MLflow experiment '{self.experiment_name}' for models...")
+        logger.info(f"Scanning MLflow experiment '{self.experiment_name}' for models...")
         
         try:
             experiment = mlflow.get_experiment_by_name(self.experiment_name)
             if not experiment:
-                print(f"Experiment {self.experiment_name} not found.")
+                logger.error(f"Experiment {self.experiment_name} not found.")
                 return
 
             # Find runs that have the 'model_type' param logged
@@ -92,7 +99,7 @@ class MultiModelPredictor:
             )
             
             if runs.empty:
-                print("No runs found.")
+                logger.warning("No runs found in MLflow.")
                 return
 
             loaded_types = set()
@@ -105,19 +112,19 @@ class MultiModelPredictor:
                 if model_type and model_type not in loaded_types:
                     run_id = run.run_id
                     uri = f"runs:/{run_id}/model"
-                    print(f"Loading {model_type} from {uri}...")
+                    logger.info(f"Loading {model_type} from {uri}...")
                     
                     try:
                         model = mlflow.sklearn.load_model(uri)
                         self.models[model_type] = model
                         loaded_types.add(model_type)
                     except Exception as e:
-                        print(f"Failed to load {model_type}: {e}")
+                        logger.error(f"Failed to load {model_type}: {e}")
             
-            print(f"Loaded models from MLflow: {list(self.models.keys())}")
+            logger.info(f"Loaded models from MLflow: {list(self.models.keys())}")
             
         except Exception as e:
-            print(f"Error scanning MLflow: {e}")
+            logger.error(f"Error scanning MLflow: {e}")
 
     def _get_feature_importance(self, model: Any, feature_names: List[str]) -> Dict[str, float]:
         """Extracts feature importance if available (Tree models)."""
@@ -155,12 +162,11 @@ class MultiModelPredictor:
         Returns consensus and individual predictions with xAI.
         """
         # Prepare Input
-        feature_order = ['N', 'P', 'K', 'temperature', 'humidity', 'ph', 'rainfall']
-        input_df = pd.DataFrame([input_data])[feature_order]
+        input_df = pd.DataFrame([input_data])[self.FEATURE_ORDER]
         
         # Scale and maintain feature names to avoid sklearn warnings
         scaled_array = self.scaler.transform(input_df)
-        scaled_features = pd.DataFrame(scaled_array, columns=feature_order)
+        scaled_features = pd.DataFrame(scaled_array, columns=self.FEATURE_ORDER)
 
         predictions_list = []
         votes = []
@@ -179,7 +185,7 @@ class MultiModelPredictor:
             votes.append(predicted_label)
             
             # xAI
-            explanation = self._get_feature_importance(model, feature_order)
+            explanation = self._get_feature_importance(model, self.FEATURE_ORDER)
             
             predictions_list.append({
                 "model": name,
@@ -190,7 +196,6 @@ class MultiModelPredictor:
 
         # Determine Consensus (Vote)
         if votes:
-            from collections import Counter
             consensus_crop = Counter(votes).most_common(1)[0][0]
         else:
             consensus_crop = "Unknown"
