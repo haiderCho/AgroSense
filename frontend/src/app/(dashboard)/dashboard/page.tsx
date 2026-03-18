@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { 
   Card, 
   CardContent, 
@@ -12,7 +11,6 @@ import {
   Sprout, 
   Activity, 
   History, 
-  MapPin, 
   Droplets, 
   Thermometer,
   ChevronRight,
@@ -22,6 +20,7 @@ import {
 import { useHistory } from "@/features/prediction";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
   const { history, isLoaded } = useHistory();
@@ -205,7 +204,7 @@ export default function DashboardPage() {
                 </CardHeader>
                 <CardContent className="space-y-4">
                     <p className="text-sm font-medium leading-relaxed italic opacity-80">
-                        "{insights.trend}"
+                        &quot;{insights.trend}&quot;
                     </p>
                     <div className="grid grid-cols-2 gap-4 pt-2">
                       <div className="p-3 rounded-lg border border-border bg-background shadow-sm">
@@ -246,8 +245,4 @@ export default function DashboardPage() {
       </div>
     </div>
   );
-}
-
-function cn(...inputs: any[]) {
-    return inputs.filter(Boolean).join(" ");
 }

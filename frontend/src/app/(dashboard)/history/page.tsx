@@ -4,7 +4,6 @@ import { useHistory } from "@/features/prediction/hooks/useHistory";
 import { Button } from "@/components/ui/button";
 import { ChevronRight, Trash2, Calendar, Clock, History } from "lucide-react";
 import Link from "next/link";
-import { motion } from "framer-motion";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/toast";
 import { useCallback } from "react";

@@ -1,8 +1,7 @@
 "use client";
 
 import React, { useMemo } from "react";
-import { motion } from "framer-motion";
-import { Brain, Sparkles, Lightbulb } from "lucide-react";
+import { Brain, Lightbulb } from "lucide-react";
 import { Card, CardHeader, CardTitle, CardContent } from "@/components/ui/card";
 
 interface InsightGeneratorProps {

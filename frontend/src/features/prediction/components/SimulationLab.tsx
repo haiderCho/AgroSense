@@ -11,7 +11,6 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/toast";
 import { debounce } from "lodash";
 import { cn } from "@/lib/utils";
-import { motion } from "framer-motion";
 
 interface SimulationLabProps {
   initialData?: PredictionFormData;
@@ -33,8 +32,8 @@ export function SimulationLab({ initialData }: SimulationLabProps) {
   
   const { mutate: predict, isPending } = usePredictCrop();
 
-  const debouncedPredict = useCallback(
-    debounce((data: PredictionFormData) => {
+  const debouncedPredict = useMemo(
+    () => debounce((data: PredictionFormData) => {
       predict(data, {
         onSuccess: (result) => setPrediction(result),
       });

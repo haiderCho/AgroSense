@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react"
-import { motion, HTMLMotionProps } from "framer-motion"
+import { HTMLMotionProps } from "framer-motion"
 import { cn } from "@/lib/utils"
 
 interface ButtonProps extends HTMLMotionProps<"button"> {
@@ -36,7 +36,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           className
         )}
         ref={ref}
-        {...(props as any)}
+        {...(props as React.ButtonHTMLAttributes<HTMLButtonElement>)}
       >
         {children}
       </button>

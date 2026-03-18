@@ -1,6 +1,5 @@
 "use client";
 
-import { motion } from "framer-motion";
 import { ThemeToggle } from "@/components/ui/theme-toggle";
 import { cn } from "@/lib/utils";
 import { LayoutDashboard, Leaf, LineChart, Menu, X } from "lucide-react";
